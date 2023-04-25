@@ -39,7 +39,7 @@ class Switcher(SpyderPluginV2):
     """
 
     NAME = "switcher"
-    OPTIONAL = [Plugins.MainMenu]
+    OPTIONAL = [Plugins.MainMenu, Plugins.Projects]
     CONTAINER_CLASS = SwitcherContainer
     CONF_SECTION = NAME
     CONF_FILE = False
@@ -146,6 +146,14 @@ class Switcher(SpyderPluginV2):
                 menu_id=ApplicationMenus.File
             )
 
+    @on_plugin_available(plugin=Plugins.Projects)
+    def on_projects_available(self):
+        pass
+
+    @on_plugin_teardown(plugin=Plugins.Projects)
+    def on_projects_teardown(self):
+        pass
+
     # --- Public API
     # ------------------------------------------------------------------------
 
@@ -229,3 +237,19 @@ class Switcher(SpyderPluginV2):
     def set_search_text(self, string):
         """Set the content of the search text."""
         self._switcher.set_search_text(string)
+
+    # Projects plugin methods
+    def get_all_files_in_project(self):
+        """Return all files in the current active project."""
+        if (self.is_projects_enabled):
+            projects = self.get_plugin(Plugins.Projects)
+            project_path = projects.get_active_project_path()
+            return self.get_container().get_all_files_in_project(project_path)
+
+    # def get_search_results_list(self, search_text):
+    #     """Return the list of search results."""
+    #     return self.get_container().get_search_results_list(search_text)
+
+    def is_projects_enabled(self):
+        """Return if the projects plugins is enabled."""
+        return self.get_container().is_projects_enabled()

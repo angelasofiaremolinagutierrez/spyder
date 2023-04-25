@@ -102,6 +102,31 @@ class EditorSwitcherManager(object):
                                     data=data,
                                     last_item=last_item)
 
+        # Add items from current active project
+        project_paths = self._switcher.get_all_files_in_project()
+        is_unsaved = [True] * len(project_paths)
+        project_short_paths = shorten_paths(project_paths, is_unsaved)
+        print("project_paths")
+        print(project_paths)
+        for idx, path in enumerate(project_paths):
+            # path = data[0].filename  # data[0] is the absolute path
+            title = osp.basename(path)
+            icon = get_file_icon(path)
+            # TODO: Handle of shorten paths based on font size
+            # and available space per item
+            if len(project_paths[idx]) > 75:
+                relative_path = project_short_paths[idx]
+            else:
+                relative_path = osp.dirname(path).lower()
+            last_item = idx + 1 == len(project_paths)
+            self._switcher.add_item(title=title,
+                                    description=relative_path,
+                                    icon=icon,
+                                    section=self._section,
+                                    # todo: check this is projects
+                                    data=path,
+                                    last_item=last_item)
+
     def create_line_switcher(self):
         """Populate switcher with line info."""
         editor = self._editor()

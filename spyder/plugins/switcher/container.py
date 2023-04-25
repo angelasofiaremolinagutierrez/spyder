@@ -7,6 +7,10 @@
 
 """Switcher Main Container."""
 
+# Standard library imports
+import subprocess
+import os
+
 # Third-party imports
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication
@@ -86,3 +90,37 @@ class SwitcherContainer(PluginMainContainer):
     def open_symbolfinder(self):
         """Open symbol list management dialog box."""
         self.open_switcher(symbol=True)
+
+    def get_all_files_in_project(self, project_path):
+        return self._execute_fzf_subprocess(project_path)
+
+    # def get_search_results_list(self, search_text):
+    #     return self._execute_fzf_subprocess(search_text=search_text)
+
+    def is_projects_enabled(self):
+        return self.get_conf('enable', section='project_explorer')
+
+    # --- Private API
+    # ------------------------------------------------------------------------
+    def _execute_fzf_subprocess(self, project_path, search_text=""):
+        # command = fzf --filter <search_str>
+        cmd_list = ["fzf", "--filter", search_text]
+        shell = False
+        env = os.environ.copy()
+        startupinfo = subprocess.STARTUPINFO()
+        try:
+            out = subprocess.check_output(cmd_list, cwd=project_path,
+                                          shell=shell, env=env,
+                                          startupinfo=startupinfo,
+                                          stderr=subprocess.STDOUT)
+            relative_path_list = out.decode('UTF-8').strip().split("\n")
+            # List of tuples with the absolute path
+            result_list = [os.path.join(project_path, path)
+                           for path in relative_path_list]
+            # Limit the number of results to 500
+            if (len(result_list) > 500):
+                result_list = result_list[:500]
+            return result_list
+        except subprocess.CalledProcessError as e:
+            print(e)
+            return []
