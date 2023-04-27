@@ -80,51 +80,37 @@ class EditorSwitcherManager(object):
         editorstack = self._editorstack()
         paths = [data.filename.lower()
                  for data in editorstack.data]
+        # add paths of all files in project
+        project_paths = self._switcher.get_all_files_in_project()
+        paths += project_paths
+        # normalize paths of editor with paths of project
+        paths = [p.replace('/', '\\\\').replace('\\\\\\', '\\\\')
+                 .replace('\\\\', '\\').lower() for p in paths]
+        # Remove duplicates, but keep the order
+        paths = [p for i, p in enumerate(paths) if p not in paths[:i]]
+        print(paths)
         save_statuses = [data.newly_created
                          for data in editorstack.data]
+        save_statuses += [True] * (len(paths) - len(save_statuses))
         short_paths = shorten_paths(paths, save_statuses)
 
-        for idx, data in enumerate(editorstack.data):
-            path = data.filename
+        for idx, path in enumerate(paths):
+            path = osp.basename(path)
             title = osp.basename(path)
             icon = get_file_icon(path)
             # TODO: Handle of shorten paths based on font size
             # and available space per item
+            print(path)
             if len(paths[idx]) > 75:
                 path = short_paths[idx]
-            else:
-                path = osp.dirname(data.filename.lower())
-            last_item = idx + 1 == len(editorstack.data)
+            path = path.lower()
+            last_item = idx + 1 == len(paths)
+            print(self._section)
             self._switcher.add_item(title=title,
                                     description=path,
                                     icon=icon,
                                     section=self._section,
-                                    data=data,
-                                    last_item=last_item)
-
-        # Add items from current active project
-        project_paths = self._switcher.get_all_files_in_project()
-        is_unsaved = [True] * len(project_paths)
-        project_short_paths = shorten_paths(project_paths, is_unsaved)
-        print("project_paths")
-        print(project_paths)
-        for idx, path in enumerate(project_paths):
-            # path = data[0].filename  # data[0] is the absolute path
-            title = osp.basename(path)
-            icon = get_file_icon(path)
-            # TODO: Handle of shorten paths based on font size
-            # and available space per item
-            if len(project_paths[idx]) > 75:
-                relative_path = project_short_paths[idx]
-            else:
-                relative_path = osp.dirname(path).lower()
-            last_item = idx + 1 == len(project_paths)
-            self._switcher.add_item(title=title,
-                                    description=relative_path,
-                                    icon=icon,
-                                    section=self._section,
-                                    # todo: check this is projects
-                                    data=path,
+                                    # data=path,
                                     last_item=last_item)
 
     def create_line_switcher(self):
