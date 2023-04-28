@@ -14,6 +14,7 @@ import os
 import os.path as osp
 import pathlib
 import shutil
+import subprocess
 
 # Third party imports
 from qtpy.compat import getexistingdirectory
@@ -38,6 +39,7 @@ from spyder.plugins.projects.utils.watcher import WorkspaceWatcher
 from spyder.plugins.projects.widgets.projectdialog import ProjectDialog
 from spyder.plugins.projects.widgets.projectexplorer import (
     ProjectExplorerTreeWidget)
+from spyder.plugins.switcher.utils import get_file_icon, shorten_paths
 from spyder.utils import encoding
 from spyder.utils.misc import getcwd_or_home
 
@@ -597,6 +599,78 @@ class ProjectExplorerWidget(PluginMainWidget):
         self.setVisible(True)
         self.raise_()
         self.update()
+
+    def handle_switcher_modes(self, mode):
+        """
+        Populate switcher with files in active project.
+        List the file names of the current active project with their
+        directories in the switcher. Only handle file mode, where
+        `mode` is empty string.
+        """
+        if mode != '':
+            return
+
+        # todo: see what should be in data
+
+        project_path = self.get_active_project_path()
+        paths = self._execute_fzf_subprocess(project_path)
+
+        # the paths that are opened in the editor need to be excluded because
+        # they are shown already in the switcher in the "editor" section.
+        editorstack = self.get_plugin().main.editor.get_current_editorstack()
+        paths += [data.filename for data in editorstack.data]
+        print(paths)
+
+        # Remove duplicate paths
+        paths = [f for i, f in enumerate(paths)
+                 if f not in paths[:i] + paths[i+1:]]
+        print()
+        print(paths)
+
+        is_unsaved = [False] * len(paths)
+        short_paths = shorten_paths(paths, is_unsaved)
+        section = self.get_title()
+
+        for i, (path, short_path) in enumerate(zip(paths, short_paths)):
+            title = osp.basename(path)
+            icon = get_file_icon(path)
+            description = osp.dirname(path).lower()
+            if len(path) > 75:
+                description = short_path
+            is_last_item = (i+1 == len(paths))
+
+            self.get_plugin()._switcher.add_item(
+                title=title,
+                description=description,
+                icon=icon,
+                section=section,
+                # data=client,
+                last_item=is_last_item
+            )
+
+    # fzf helper method
+    def _execute_fzf_subprocess(self, project_path, search_text=""):
+        # command = fzf --filter <search_str>
+        cmd_list = ["fzf", "--filter", search_text]
+        shell = False
+        env = os.environ.copy()
+        startupinfo = subprocess.STARTUPINFO()
+        try:
+            out = subprocess.check_output(cmd_list, cwd=project_path,
+                                          shell=shell, env=env,
+                                          startupinfo=startupinfo,
+                                          stderr=subprocess.STDOUT)
+            relative_path_list = out.decode('UTF-8').strip().split("\n")
+            # List of tuples with the absolute path
+            result_list = [os.path.join(project_path, path)
+                           for path in relative_path_list]
+            # Limit the number of results to 500
+            if (len(result_list) > 500):
+                result_list = result_list[:500]
+            return result_list
+        except subprocess.CalledProcessError as e:
+            print(e)
+            return []
 
     # ---- Public API for the LSP
     # -------------------------------------------------------------------------

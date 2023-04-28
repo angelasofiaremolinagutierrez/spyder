@@ -44,7 +44,7 @@ class Projects(SpyderDockablePlugin):
     CONF_FILE = False
     REQUIRES = []
     OPTIONAL = [Plugins.Completions, Plugins.IPythonConsole, Plugins.Editor,
-                Plugins.MainMenu]
+                Plugins.MainMenu, Plugins.Switcher]
     WIDGET_CLASS = ProjectExplorerWidget
 
     # Signals
@@ -203,6 +203,14 @@ class Projects(SpyderDockablePlugin):
             menu_id=ApplicationMenus.Projects,
             section=ProjectsMenuSections.Extras)
 
+    @on_plugin_available(plugin=Plugins.Switcher)
+    def on_switcher_available(self):
+        # Connect to switcher
+        self._switcher = self.main.switcher
+        self._switcher.sig_mode_selected.connect(self.handle_switcher_modes)
+        self._switcher.sig_item_selected.connect(
+            self.handle_switcher_selection)
+
     @on_plugin_teardown(plugin=Plugins.Editor)
     def on_editor_teardown(self):
         editor = self.get_plugin(Plugins.Editor)
@@ -256,6 +264,10 @@ class Projects(SpyderDockablePlugin):
     def on_main_menu_teardown(self):
         main_menu = self.get_plugin(Plugins.MainMenu)
         main_menu.remove_application_menu(ApplicationMenus.Projects)
+
+    @on_plugin_teardown(plugin=Plugins.Switcher)
+    def on_switcher_teardown(self):
+        self._switcher = None
 
     def on_close(self, cancelable=False):
         """Perform actions before parent main window is closed"""
@@ -410,6 +422,15 @@ class Projects(SpyderDockablePlugin):
             are project type classes.
         """
         return self.get_widget().get_project_types()
+
+    def handle_switcher_modes(self, mode):
+        """
+        Populate switcher with files in active project.
+        List the file names of the current active project with their
+        directories in the switcher. Only handle file mode, where
+        `mode` is empty string.
+        """
+        self.get_widget().handle_switcher_modes("")
 
     # ---- Private API
     # -------------------------------------------------------------------------
