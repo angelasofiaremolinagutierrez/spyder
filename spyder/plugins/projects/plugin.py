@@ -208,8 +208,6 @@ class Projects(SpyderDockablePlugin):
         # Connect to switcher
         self._switcher = self.main.switcher
         self._switcher.sig_mode_selected.connect(self.handle_switcher_modes)
-        self._switcher.sig_item_selected.connect(
-            self.handle_switcher_selection)
 
     @on_plugin_teardown(plugin=Plugins.Editor)
     def on_editor_teardown(self):
@@ -429,6 +427,11 @@ class Projects(SpyderDockablePlugin):
         List the file names of the current active project with their
         directories in the switcher. Only handle file mode, where
         `mode` is empty string.
+
+        Parameters
+        ----------
+        mode: str
+            The selected mode (open files "", symbol "@" or line ":").
         """
         self.get_widget().handle_switcher_modes("")
 

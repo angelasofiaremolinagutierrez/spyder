@@ -32,6 +32,8 @@ from spyder.plugins.completion.api import (
     CompletionRequestTypes, FileChangeType)
 from spyder.plugins.completion.decorators import (
     class_register, handles, request)
+from spyder.plugins.editor.widgets.editorstack_helpers import FileInfo
+from spyder.plugins.editor.widgets import codeeditor
 from spyder.plugins.explorer.api import DirViewActions
 from spyder.plugins.projects.api import (
     BaseProjectType, EmptyProject, WORKSPACE)
@@ -606,11 +608,14 @@ class ProjectExplorerWidget(PluginMainWidget):
         List the file names of the current active project with their
         directories in the switcher. Only handle file mode, where
         `mode` is empty string.
+
+        Parameters
+        ----------
+        mode: str
+            The selected mode (open files "", symbol "@" or line ":").
         """
         if mode != '':
             return
-
-        # todo: see what should be in data
 
         project_path = self.get_active_project_path()
         paths = self._execute_fzf_subprocess(project_path)
@@ -619,13 +624,10 @@ class ProjectExplorerWidget(PluginMainWidget):
         # they are shown already in the switcher in the "editor" section.
         editorstack = self.get_plugin().main.editor.get_current_editorstack()
         paths += [data.filename for data in editorstack.data]
-        print(paths)
 
         # Remove duplicate paths
         paths = [f for i, f in enumerate(paths)
                  if f not in paths[:i] + paths[i+1:]]
-        print()
-        print(paths)
 
         is_unsaved = [False] * len(paths)
         short_paths = shorten_paths(paths, is_unsaved)
@@ -633,18 +635,21 @@ class ProjectExplorerWidget(PluginMainWidget):
 
         for i, (path, short_path) in enumerate(zip(paths, short_paths)):
             title = osp.basename(path)
+            enc = encoding.read(path)
+            editor = codeeditor.CodeEditor(editorstack)
             icon = get_file_icon(path)
             description = osp.dirname(path).lower()
             if len(path) > 75:
                 description = short_path
             is_last_item = (i+1 == len(paths))
-
+            data = FileInfo(title, enc, editor, False,
+                            editorstack.threadmanager)
             self.get_plugin()._switcher.add_item(
                 title=title,
                 description=description,
                 icon=icon,
                 section=section,
-                # data=client,
+                data=data,
                 last_item=is_last_item
             )
 
