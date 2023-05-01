@@ -642,7 +642,7 @@ class ProjectExplorerWidget(PluginMainWidget):
             if len(path) > 75:
                 description = short_path
             is_last_item = (i+1 == len(paths))
-            data = FileInfo(title, enc, editor, False,
+            data = FileInfo(path, enc, editor, False,
                             editorstack.threadmanager)
             self.get_plugin()._switcher.add_item(
                 title=title,
@@ -652,6 +652,22 @@ class ProjectExplorerWidget(PluginMainWidget):
                 data=data,
                 last_item=is_last_item
             )
+
+    def handle_switcher_selection(self, item, mode, search_text):
+        """
+        Handle user selecting item in switcher.
+        If the selected item is not in the section of the switcher that
+        corresponds to this plugin, then ignore it. Otherwise, switch to
+        selected item in notebook plugin and hide the switcher.
+        """
+        if item.get_section() != self.get_title():
+            return
+
+        # Open file in editor
+        filename = item.get_data().filename
+        self.get_plugin().main.editor.load(filename)
+        self.get_plugin().switch_to_plugin()
+        self.get_plugin().main.switcher.hide()
 
     # fzf helper method
     def _execute_fzf_subprocess(self, project_path, search_text=""):

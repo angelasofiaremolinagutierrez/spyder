@@ -208,6 +208,8 @@ class Projects(SpyderDockablePlugin):
         # Connect to switcher
         self._switcher = self.main.switcher
         self._switcher.sig_mode_selected.connect(self.handle_switcher_modes)
+        self._switcher.sig_item_selected.connect(
+            self.handle_switcher_selection)
 
     @on_plugin_teardown(plugin=Plugins.Editor)
     def on_editor_teardown(self):
@@ -434,6 +436,24 @@ class Projects(SpyderDockablePlugin):
             The selected mode (open files "", symbol "@" or line ":").
         """
         self.get_widget().handle_switcher_modes("")
+
+    def handle_switcher_selection(self, item, mode, search_text):
+        """
+        Handle user selecting item in switcher.
+        If the selected item is not in the section of the switcher that
+        corresponds to this plugin, then ignore it. Otherwise, switch to
+        selected item in notebook plugin and hide the switcher.
+
+        Parameters
+        ----------
+        item: object
+            The current selected item from the switcher list (QStandardItem).
+        mode: str
+            The current selected mode (open files "", symbol "@" or line ":").
+        search_text: str
+            Cleaned search/filter text.
+        """
+        self.get_widget().handle_switcher_selection(item, mode, search_text)
 
     # ---- Private API
     # -------------------------------------------------------------------------
