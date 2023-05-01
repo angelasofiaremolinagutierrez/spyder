@@ -618,6 +618,9 @@ class ProjectExplorerWidget(PluginMainWidget):
             return
 
         project_path = self.get_active_project_path()
+        if project_path is None:
+            return
+
         paths = self._execute_fzf_subprocess(project_path)
 
         # the paths that are opened in the editor need to be excluded because
