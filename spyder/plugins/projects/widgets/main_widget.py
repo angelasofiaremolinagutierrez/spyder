@@ -626,11 +626,7 @@ class ProjectExplorerWidget(PluginMainWidget):
         # the paths that are opened in the editor need to be excluded because
         # they are shown already in the switcher in the "editor" section.
         editorstack = self.get_plugin().main.editor.get_current_editorstack()
-        paths += [data.filename for data in editorstack.data]
-
-        # Remove duplicate paths
-        paths = [f for i, f in enumerate(paths)
-                 if f not in paths[:i] + paths[i+1:]]
+        paths = [path for path in paths if path not in editorstack.data]
 
         is_unsaved = [False] * len(paths)
         short_paths = shorten_paths(paths, is_unsaved)
